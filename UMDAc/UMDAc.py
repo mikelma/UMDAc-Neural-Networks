@@ -8,6 +8,7 @@ import random
 import copy
 import time
 
+from keras.models import model_from_json
 import keras
 
 class UMDAc():
@@ -47,25 +48,28 @@ class UMDAc():
             print('Iterations: ', self.iterations)
             print('')
 
-        self.fitness = {} # Init fitness log
-        
-        ## Create first generation randomly
-        self.gen = {} # Init generation 0
+        if self.model != None:
 
-        ## Create random specimens
-        for i in range(gen_size):
-            ## Generate specimen weights and biases
-            specimen = []
-            for layer in model.get_weights():
-                specimen.append(np.random.uniform(-1,1,layer.shape))                            
-            self.gen['s'+str(i)] = np.array(specimen)
+            self.fitness = {} # Init fitness log
+            
+            ## Create first generation randomly
+            self.gen = {} # Init generation 0
+
+            ## Create random specimens
+            for i in range(gen_size):
+                ## Generate specimen weights and biases
+                specimen = []
+                for layer in model.get_weights():
+                    specimen.append(np.random.uniform(-1,1,layer.shape))                            
+                self.gen['s'+str(i)] = np.array(specimen)
 
     def gym_evaluate(self, specimen,  
                     render=False, 
                     time_sleep=.0):
-
-        ## Load specimen
-        self.model.set_weights(specimen)
+        
+        if specimen != None:
+            ## Load specimen
+            self.model.set_weights(specimen)
 
         seed = self.seed ## Initial random seed
         reward_log = [] ## For later use in total reward sum if iterations > 1 
@@ -351,13 +355,37 @@ class UMDAc():
             specimen['b'+str(len(biases))] = new_o_b
             
 
-    def save_specimen(self, specimen, filename='specimen'):
-        ## Save weights to .npy numpy file
-        np.save(filename, specimen)
+    def save_specimen(self, specimen, filename='specimen.h5'):
+        ### Save weights to .npy numpy file
+        #np.save(filename, specimen)
+        ### Save model to JSON
+        #model_json = self.model.to_json()
+        #with open(filename+".json", "w") as json_file:
+        #    json_file.write(model_json)
 
-    def load_specimen(self, filename='specimen.npy'):
-        ## Load specimen's weights from numpy .npy file 
-        return np.load(filename)
+        from keras.models import load_model
+        
+        self.model.set_weights(specimen)
+
+        self.model.save(filename)  
+
+    def load_specimen(self, filename='specimen.h5'):
+        ## Load model 
+        # load json and create model
+        #json_file = open(filename+'.json', 'r')
+        #self.model = json_file.read()
+
+        #json_file.close()
+
+        ### Load specimen's weights from numpy .npy file 
+        #weights = np.load(filename+'.npy')
+
+        del self.model  # delete the existing model
+
+        from keras.models import load_model
+        self.model = load_model(filename)
+
+        # return weights 
 
 if __name__ == '__main__':
 
