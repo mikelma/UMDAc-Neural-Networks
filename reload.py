@@ -5,6 +5,8 @@ from os.path import isfile, join
 ## HYPERPARAMETERS
 FORMAT = '.h5'
 MAX_STEPS = None
+SEED = 0
+RENDER = True
 
 ## List files
 mypath = os.getcwd() ## Current path
@@ -60,10 +62,15 @@ from UMDAc.UMDAc import UMDAc
 umdac = UMDAc(model=None, 
              gen_size=1,
              max_steps=MAX_STEPS,
-             env=env) 
+             env=env,
+             seed=SEED) 
 
 ## Evaluate specimen, render enabled
-umdac.load_specimen(sname)
-tr = umdac.gym_evaluate(None, True)
-print('\n', 'total reward: ', tr, '\n')
 
+l = []
+f = []
+
+umdac.load_specimen(sname)
+
+tr = umdac.gym_evaluate(None, RENDER)
+print('\n', 'total reward: ', tr, '\n')
