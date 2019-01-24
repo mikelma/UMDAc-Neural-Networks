@@ -14,9 +14,9 @@ LOG = False
 LOG_FILENAME = 'bipedal_log.txt'
 
 GENERATIONS = 1000
-GEN_SIZE = 100
-N_SURV = 30 
-N_RAND_SURV = 20 
+GEN_SIZE = 300
+N_SURV = 100 
+N_RAND_SURV = 50 
 
 ENV_NAME = 'BipedalWalker-v2'
 AUTO_STOP = True
