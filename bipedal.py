@@ -23,7 +23,7 @@ AUTO_STOP = True
 SOLVED = 600
 
 ITERATIONS = 1
-MAX_STEPS = 600*ITERATIONS
+MAX_STEPS = 1600 
 
 LOG_NOTES = 'gensize:'+str(GEN_SIZE)+' , nsurv:'+str(
     N_SURV)+' nrandsurv:'+str(N_RAND_SURV)
@@ -140,10 +140,11 @@ umdac.fitness.values()))]
 print('')
 print('-'*5, ' Rendering best specimen ', '-'*5)
 
-umdac.iterations = 1
+umdac.iterations = 1 ## Set iterations to 1
 
-rlog = []
-while 1:
+rlog = [] ## Reward logger
+
+for n in range(100):
     ## For each specimen
     specimen = umdac.gen[best]
     ## Tests specimen in environment
@@ -151,5 +152,9 @@ while 1:
                                  render=True)
     rlog.append(t_reward)
     avg = sum(rlog) / len(rlog)
+
     print('Total reward: ', t_reward, 
           ',  average total reward: ', avg) 
+
+    ## Set random seed to random value
+    umdac.seed = np.random.randint(254)
