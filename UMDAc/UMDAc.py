@@ -111,10 +111,14 @@ class UMDAc():
                     
                     if done:
                         break
+
                 ## Used if iterations > 1
                 reward_log.append(t_reward)
-                ## Update seed to test agent in different scenarios
-                seed += 1
+
+                if seed != None:
+                    ## Update seed to test agent 
+                    ## in different scenarios
+                    seed += 1
 
             else:
                 ## Test agent until game over
@@ -150,7 +154,11 @@ class UMDAc():
                         break
                 ## Used if iterations > 1
                 reward_log.append(t_reward)
-                seed += 1 ## Update random seed 
+
+                if seed != None:
+                    ## Update seed to test agent 
+                    ## in different scenarios
+                    seed += 1
                 
         ## Disable random seed
         ''' This prevents the algorithm to generate the
@@ -287,36 +295,20 @@ class UMDAc():
 
 
     def save_specimen(self, specimen, filename='specimen.h5'):
-        ### Save weights to .npy numpy file
-        #np.save(filename, specimen)
-        ### Save model to JSON
-        #model_json = self.model.to_json()
-        #with open(filename+".json", "w") as json_file:
-        #    json_file.write(model_json)
 
         from keras.models import load_model
-        
+        ## Load specimen's weights to model        
         self.model.set_weights(specimen)
-
+        ## Save model and specimen's weights
         self.model.save(filename)  
 
     def load_specimen(self, filename='specimen.h5'):
-        ## Load model 
-        # load json and create model
-        #json_file = open(filename+'.json', 'r')
-        #self.model = json_file.read()
-
-        #json_file.close()
-
-        ### Load specimen's weights from numpy .npy file 
-        #weights = np.load(filename+'.npy')
 
         del self.model  # delete the existing model
 
         from keras.models import load_model
+        ## Load new model and weights 
         self.model = load_model(filename)
-
-        # return weights 
 
 if __name__ == '__main__':
 
@@ -335,7 +327,10 @@ if __name__ == '__main__':
     GEN_SIZE = 30
     N_SURV = 10
     N_RAND_SURV = 5 
+
     NOISE = None 
+    SEED = None
+    MAX_STEPS = 200
 
     a = Input(shape=(4,))
     b = Dense(2)(a)
@@ -345,8 +340,9 @@ if __name__ == '__main__':
     umdac = UMDAc(model,
                  gen_size=GEN_SIZE,
                  action_mode='argmax',
-                 max_steps=200,
-                 env=env)
+                 max_steps=MAX_STEPS,
+                 env=env,
+                 seed=SEED)
 
     # umdac.save_specimen(umdac.gen['s0'])
     # s = umdac.load_specimen()
@@ -383,5 +379,4 @@ if __name__ == '__main__':
         print('Total reward: ', t_r)
         ## Set random seed to random value
         umdac.seed = np.random.randint(254)
-
 
