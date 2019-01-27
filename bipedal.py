@@ -7,7 +7,7 @@ import gym
 import keras
 
 from keras.models import Model
-from keras.layers import Input, Dense
+from keras.layers import Input, Dense, Lambda
 
 ### HYPERPARAMETERS ###
 LOG = False
@@ -33,11 +33,13 @@ env = gym.make(ENV_NAME)
 
 ## Model initialization
 a = Input(shape=(env.observation_space.shape[0],))
-x = Dense(15, activation='relu')(a)
-x = Dense(15, activation='relu')(x)
+x = Dense(10, activation='relu')(a)
+# x = Dense(15, activation='relu')(x)
 b = Dense(env.action_space.shape[0], activation='tanh')(x)
 
 model = Model(inputs=a, outputs=b)
+
+model.summary()
 
 ## Initialize UMDAc
 umdac = UMDAc(model,
