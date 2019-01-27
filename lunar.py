@@ -31,18 +31,11 @@ LOG_NOTES = 'gensize:'+str(GEN_SIZE)+' , nsurv:'+str(
 ## Environment initialization
 env = gym.make(ENV_NAME)
 
-## Model initialization
+## Model initializatioa
 a = Input(shape=(8,))
-x = Dense(15, activation='relu')(a)
-x = Dense(15, activation='relu')(x)
-b = Dense(4, activation='relu')(x)
+b = Dense(4, activation='relu')(a)
 
 model = Model(inputs=a, outputs=b)
-
-## Save model's plot
-from keras.utils.vis_utils import plot_model
-plot_model(model, to_file='model_plot.png', show_shapes=True, 
-           show_layer_names=True)
 
 ## Initialize UMDAc
 umdac = UMDAc(model,
@@ -134,21 +127,10 @@ umdac.fitness.values()))]
 print('')
 print('-'*5, ' Rendering best specimen ', '-'*5)
 
-umdac.iterations = 1 ## Set iterations to 1
+specimen = umdac.gen[best]
 
-rlog = [] ## Reward logger
-
-for n in range(100):
-    ## For each specimen
-    specimen = umdac.gen[best]
+while 1:
     ## Tests specimen in environment
     t_reward = umdac.gym_evaluate(specimen,
                                  render=True)
-    rlog.append(t_reward)
-    avg = sum(rlog) / len(rlog)
-
-    print('Total reward: ', t_reward, 
-          ',  average total reward: ', avg) 
-
-    ## Set random seed to random value
-    umdac.seed = np.random.randint(254)
+    print('Total reward: ', t_reward)
