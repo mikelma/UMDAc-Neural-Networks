@@ -43,8 +43,7 @@ umdac = UMDAc(model,
               env=env, 
               max_steps=MAX_STEPS,
               iterations=ITERATIONS, 
-              action_mode='argmax',
-              display_info=True)
+              action_mode='argmax')
 
 ## Reset training data loggers    
 avg_reward_log = []

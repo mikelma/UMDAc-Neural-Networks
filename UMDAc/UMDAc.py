@@ -18,8 +18,7 @@ class UMDAc():
                  max_steps=None,
                  action_mode='raw',
                  seed=0, 
-                 iterations=1, 
-                 display_info=True):
+                 iterations=1): 
         
         ## Global variables
         self.model = model
@@ -40,13 +39,6 @@ class UMDAc():
                 - tanh
         '''
         self.action_mode = action_mode
-
-        if display_info:
-            ## Print environment info
-            print('\n' + '#'*5, ' INFO  ' ,'#'*5)
-            print('Observation space: ', self.env.observation_space)
-            print('Iterations: ', self.iterations)
-            print('')
 
         if self.model != None:
 
