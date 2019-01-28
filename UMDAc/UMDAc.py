@@ -13,32 +13,16 @@ import keras
 
 class UMDAc():
 
-    def __init__(self, model, gen_size, 
-                 env, 
-                 max_steps=None,
-                 action_mode='raw',
-                 seed=0, 
-                 iterations=1): 
+    def __init__(self, 
+                 model, 
+                 problem, 
+                 gen_size): 
         
         ## Global variables
         self.model = model
         self.gen_size = gen_size
-        self.iterations = iterations
         
-        self.seed = seed
-        self.max_steps = max_steps
-
-        self.env = env ## Environment
-
-        '''
-        ACTION MODE:
-            Determines how output data from neural network
-            will be treated. Three options:
-                - raw
-                - argmax
-                - tanh
-        '''
-        self.action_mode = action_mode
+        self.problem = problem
 
         if self.model != None:
 
@@ -52,118 +36,44 @@ class UMDAc():
                 ## Generate specimen weights and biases
                 specimen = []
                 for layer in model.get_weights():
-                    specimen.append(np.random.uniform(-1,1,layer.shape))                            
+                    specimen.append(np.random.uniform(
+                        -1,1,layer.shape))                            
                 self.gen['s'+str(i)] = np.array(specimen)
 
-    def gym_evaluate(self, specimen,  
-                    render=False, 
-                    time_sleep=.0):
+        self.fitness = {}
         
-        if specimen != None:
-            ## Load specimen
-            self.model.set_weights(specimen)
+        ## Initialize training fitness logger
+        self.history = {
+            'avg':[],
+            'min':[],
+            'max':[]}
 
-        seed = self.seed ## Initial random seed
-        reward_log = [] ## For later use in total reward sum if iterations > 1 
-        for iters in range(self.iterations):
+    def train(self, surv, rand_surv, noise=None):
 
-            ## Reset environment 
-            self.env.seed(seed)
-            state = self.env.reset()
+        n_surv = int(self.gen_size*surv)
+        n_random_surv = int(n_surv*rand_surv)
+        n_surv -= n_random_surv
 
-            t_reward = 0 ## Reset total reward
+        survivors = []
+        survivors_fitness = []
+
+        for name in self.gen:
             
-            if self.max_steps != None:
-                ## Finite time steps
-                for step in range(self.max_steps):
-                    ## Render env
-                    if render:
-                        self.env.render()
-                    ## Format state
-                    state = np.array([state])
-                    ## Pass forward state data 
-                    output = self.model.predict(state) 
+            survivors.append(name)
 
-                    ## Format output to use it as next action
-                    if self.action_mode == 'argmax':
-                        action = np.argmax(output[0])
+            specimen = self.gen[name]
+            t_reward = self.problem.evaluate(specimen, 
+                                             self.model, 
+                                             render=False)
+            self.fitness[name] = t_reward
 
-                    elif self.action_mode == 'raw':
-                        action = output[0]
-
-                    elif self.action_mode == 'tanh':
-                        action = np.tanh(output[0])
-
-                    ## Run new step
-                    state, reward, done, _ = self.env.step(action)
-                    time.sleep(time_sleep) ## Wait time
-
-                    ## Add current reard to total
-                    t_reward += reward
-                    
-                    if done:
-                        break
-
-                ## Used if iterations > 1
-                reward_log.append(t_reward)
-
-                if seed != None:
-                    ## Update seed to test agent 
-                    ## in different scenarios
-                    seed += 1
-
-            else:
-                ## Test agent until game over
-                done = False
-                while not done:
-                    ## Render env
-                    if render:
-                        self.env.render()
-
-                    ## Format state
-                    state = np.array([state])
-                    ## Pass forward state data 
-                    output = self.model.predict(state) 
-
-                    ## Format output to use it as next action
-                    if self.action_mode == 'argmax':
-                        action = np.argmax(output[0])
-
-                    elif self.action_mode == 'raw':
-                        action = output[0]
-
-                    elif self.action_mode == 'tanh':
-                        action = np.tanh(output[0])
-
-                    ## Run new step
-                    state, reward, done, _ = self.env.step(action)
-                    time.sleep(time_sleep) ## Wait time
-
-                    ## Add current reard to total
-                    t_reward += reward
-                    ## End game if game over
-                    if done:
-                        break
-                ## Used if iterations > 1
-                reward_log.append(t_reward)
-
-                if seed != None:
-                    ## Update seed to test agent 
-                    ## in different scenarios
-                    seed += 1
-                
-        ## Disable random seed
-        ''' This prevents the algorithm to generate the
-            same random numbers all time.   '''
-        np.random.seed(None)
-        ## Sum of total rewards in all iterations
-        return sum(reward_log)
-
-    def train(self, n_surv, n_random_surv, noise=None):
-        
         ## Collect data about generation
         survivors = list(self.fitness.keys()) ## Survivors' names
         survivors_fitness = list(self.fitness.values()) ## Survivors's fitnesses
+
+        self.history['avg'].append(np.mean(survivors_fitness))
+        self.history['min'].append(min(survivors_fitness))
+        self.history['max'].append(max(survivors_fitness))
 
         worsts = [] ## Worst specimens names
         worsts_fitness = [] ## Worst specimens fitness values
@@ -258,7 +168,9 @@ class UMDAc():
             ## and store data for later comparison
             new_names.append(name)
             specimen = self.new[name]
-            new_fitness.append(self.gym_evaluate(specimen))
+            ## Load
+            new_fitness.append(self.problem.evaluate(
+                specimen, self.model))
 
         '''
         Selection. Replace all specimens in the worsts list
@@ -285,6 +197,7 @@ class UMDAc():
             del to_select_names[indx]
             del to_select_fitness[indx]
 
+        return self.history
 
     def save_specimen(self, specimen, filename='specimen.h5'):
 
@@ -294,7 +207,7 @@ class UMDAc():
         ## Save model and specimen's weights
         self.model.save(filename)  
 
-    def load_specimen(self, filename='specimen.h5'):
+    def load_all(self, filename='specimen.h5'):
 
         del self.model  # delete the existing model
 
@@ -304,25 +217,23 @@ class UMDAc():
 
 if __name__ == '__main__':
 
-    import gym
     import numpy as np
-
-    ## Environment initialization
-    env = gym.make('CartPole-v0')
 
     import keras
 
     from keras.models import Model
     from keras.layers import Input, Dense
 
-    GENERATIONS = 20
+    from Wrappers.gym import GYM
+
+    cartpole = GYM('CartPole-v0')
+
+    GENERATIONS = 10
     GEN_SIZE = 30
-    N_SURV = 10
-    N_RAND_SURV = 5 
+    SURV = .5
+    RAND_SURV = .3 
 
     NOISE = None 
-    SEED = None
-    MAX_STEPS = 200
 
     a = Input(shape=(4,))
     b = Dense(2)(a)
@@ -330,31 +241,21 @@ if __name__ == '__main__':
     model = Model(inputs=a, outputs=b)
 
     umdac = UMDAc(model,
-                 gen_size=GEN_SIZE,
-                 action_mode='argmax',
-                 max_steps=MAX_STEPS,
-                 env=env,
-                 seed=SEED)
+                 problem=cartpole,
+                 gen_size=GEN_SIZE)
 
     # umdac.save_specimen(umdac.gen['s0'])
     # s = umdac.load_specimen()
-
+    # quit()
+    
     for generation in range(GENERATIONS):
 
-        r_log = [] ## Total rewards log
+        history = umdac.train(surv=SURV, 
+                    rand_surv=RAND_SURV,
+                    noise=NOISE)
 
-        for name in umdac.gen:
-            
-            specimen = umdac.gen[name]
-            t_reward = umdac.gym_evaluate(specimen, False)
+        avg_f = history['avg'][-1]
 
-            umdac.fitness[name] = t_reward
-            r_log.append(t_reward)
-
-        umdac.train(n_surv=N_SURV, n_random_surv=N_RAND_SURV,
-                   noise=NOISE)
-
-        avg_f = sum(r_log) / len(r_log)
         print(generation, ' / ', GENERATIONS,' avg reward: ', avg_f)
 
     ## Render best speciemens
@@ -364,11 +265,14 @@ if __name__ == '__main__':
     ## Select best specimen 
     names = list(umdac.fitness.keys())
     f = list(umdac.fitness.values())
+
     best = umdac.gen[names[f.index(max(f))]]
 
-    while 1:
-        t_r = umdac.gym_evaluate(best, True)
-        print('Total reward: ', t_r)
-        ## Set random seed to random value
-        umdac.seed = np.random.randint(254)
+    cartpole.iterations = 100
+
+    t_r = cartpole.evaluate(best, model, 
+                            render=True,
+                            verbose=True)
+
+    print('Total reward: ', t_r)
 
