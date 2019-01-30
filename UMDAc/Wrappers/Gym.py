@@ -5,7 +5,7 @@ import time
 
 import keras
 
-class GYM():
+class Gym():
 
     def __init__(self, envname,
                      iterations=1,

@@ -7,7 +7,7 @@ from keras.models import Model
 from keras.layers import Input, Dense
 
 from UMDAc.UMDAc import UMDAc
-from UMDAc.Wrappers.gym import GYM
+from UMDAc.Wrappers.Gym import Gym
 
 GENERATIONS = 500
 GEN_SIZE = 200
@@ -19,7 +19,7 @@ SEED = None
 MAX_STEPS = 400
 ITERATIONS = 3
 
-problem = GYM('LunarLander-v2',
+problem = Gym('LunarLander-v2',
               iterations=ITERATIONS,
               max_steps=MAX_STEPS)
 

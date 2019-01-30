@@ -207,7 +207,7 @@ class UMDAc():
         ## Save model and specimen's weights
         self.model.save(filename)  
 
-    def load_all(self, filename='specimen.h5'):
+    def load_model(self, filename='specimen.h5'):
 
         del self.model  # delete the existing model
 
@@ -224,9 +224,9 @@ if __name__ == '__main__':
     from keras.models import Model
     from keras.layers import Input, Dense
 
-    from Wrappers.gym import GYM
+    from Wrappers.Gym import Gym
 
-    cartpole = GYM('CartPole-v0')
+    cartpole = Gym('CartPole-v0')
 
     GENERATIONS = 10
     GEN_SIZE = 30
@@ -244,10 +244,6 @@ if __name__ == '__main__':
                  problem=cartpole,
                  gen_size=GEN_SIZE)
 
-    # umdac.save_specimen(umdac.gen['s0'])
-    # s = umdac.load_specimen()
-    # quit()
-    
     for generation in range(GENERATIONS):
 
         history = umdac.train(surv=SURV, 
