@@ -52,25 +52,25 @@ sel = None
 while sel not in range(len(envs)):
     sel = int(input('Selection > '))
 
+from UMDAc.UMDAc import UMDAc
+from UMDAc.Wrappers.Gym import Gym
+
 ## Init env
-import gym
-env = gym.make(envs[sel]) 
+ITERATIONS = 100
+problem = Gym(envs[sel],
+              iterations=ITERATIONS,
+              max_steps=MAX_STEPS)
 
 ## Init UMDAc
-from UMDAc.UMDAc import UMDAc
+umdac = UMDAc(model=None,
+             problem=problem,
+             gen_size=None)
 
-umdac = UMDAc(model=None, 
-             gen_size=1,
-             max_steps=MAX_STEPS,
-             env=env,
-             seed=SEED) 
+umdac.load_model(sname)
 
 ## Evaluate specimen, render enabled
-
-l = []
-f = []
-
-umdac.load_specimen(sname)
-
-tr = umdac.gym_evaluate(None, RENDER)
+tr = problem.evaluate(specimen=None,
+                     model=umdac.model,
+                     render=True,
+                     verbose=True)
 print('\n', 'total reward: ', tr, '\n')
