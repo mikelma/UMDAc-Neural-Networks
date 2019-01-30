@@ -52,14 +52,28 @@ sel = None
 while sel not in range(len(envs)):
     sel = int(input('Selection > '))
 
+action_modes = ['argmax', 'raw']
+for i, action in enumerate(action_modes):
+    print('['+str(i)+'] '+action)
+
+print('')
+act_sel = None 
+while act_sel not in range(len(envs)):
+    act_sel = int(input('Selection > '))
+
+action_mode = action_modes[act_sel]
+
 from UMDAc.UMDAc import UMDAc
 from UMDAc.Wrappers.Gym import Gym
+
+### INITIALIZATION ###
 
 ## Init env
 ITERATIONS = 100
 problem = Gym(envs[sel],
               iterations=ITERATIONS,
-              max_steps=MAX_STEPS)
+              max_steps=MAX_STEPS,
+              action_mode=action_mode)
 
 ## Init UMDAc
 umdac = UMDAc(model=None,
@@ -73,4 +87,5 @@ tr = problem.evaluate(specimen=None,
                      model=umdac.model,
                      render=True,
                      verbose=True)
+
 print('\n', 'total reward: ', tr, '\n')
