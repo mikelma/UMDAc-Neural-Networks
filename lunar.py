@@ -16,7 +16,6 @@ SURV = .5
 RAND_SURV = .3 
 
 NOISE = None 
-SEED = None
 FILENAME = 'lunar_result.h5' # Filename of best specimen
 # Problem specific
 MAX_STEPS = 400
@@ -37,6 +36,8 @@ model = Model(inputs=a, outputs=b)
 umdac = UMDAc(model,
              problem=problem,
              gen_size=GEN_SIZE)
+
+model.summary()
 
 ### TRAINING ###
 for generation in range(GENERATIONS):
