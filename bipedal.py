@@ -1,41 +1,40 @@
-from UMDAc.UMDAc import UMDAc
 import matplotlib.pyplot as plt
-
 import numpy as np
-import gym
 
 import keras
 
 from keras.models import Model
-from keras.layers import Input, Dense, Lambda
+from keras.layers import Input, Dense
+
+from UMDAc.UMDAc import UMDAc
+from UMDAc.Wrappers.Gym import Gym
 
 ### HYPERPARAMETERS ###
-LOG = False
-LOG_FILENAME = 'bipedal_log.txt'
-
 GENERATIONS = 1000
-GEN_SIZE = 300
-N_SURV = 100 
-N_RAND_SURV = 50 
+GEN_SIZE = 400
+SURV = .5 
+RAND_SURV = .3 
 
 ENV_NAME = 'BipedalWalker-v2'
-AUTO_STOP = True
-SOLVED = 600
 
-ITERATIONS = 1
-MAX_STEPS = 1600 
+ITERATIONS = 3
+MAX_STEPS = 600 
 
-LOG_NOTES = 'gensize:'+str(GEN_SIZE)+' , nsurv:'+str(
-    N_SURV)+' nrandsurv:'+str(N_RAND_SURV)
- 
-## Environment initialization
-env = gym.make(ENV_NAME)
+NOISE = None 
+FILENAME = 'bipedal.h5' # Filename of best specimen
 
+## Initialize Gym problem 
+problem = Gym(ENV_NAME,
+              iterations=ITERATIONS,
+              max_steps=MAX_STEPS,
+              action_mode='raw')
+
+state_size = problem.env.observation_space.shape[0]  
+action_size = problem.env.action_space.shape[0]  
 ## Model initialization
-a = Input(shape=(env.observation_space.shape[0],))
-x = Dense(10, activation='relu')(a)
-# x = Dense(15, activation='relu')(x)
-b = Dense(env.action_space.shape[0], activation='tanh')(x)
+a = Input(shape=(state_size,))
+# x = Dense(10, activation='relu')(a)
+b = Dense(action_size, activation='tanh')(a)
 
 model = Model(inputs=a, outputs=b)
 
@@ -43,61 +42,30 @@ model.summary()
 
 ## Initialize UMDAc
 umdac = UMDAc(model,
-              gen_size=GEN_SIZE, 
-              env=env, 
-              max_steps=MAX_STEPS,
-              iterations=ITERATIONS, 
-              action_mode='raw')
+             problem=problem,
+             gen_size=GEN_SIZE)
 
-## Reset training data loggers    
-avg_reward_log = []
-max_rewards = []
-min_rewards = []
-last_avg_reward = 0
+### TRAINING ###
+for generation in range(GENERATIONS):
 
-for i in range(GENERATIONS):    
-    ## Reset reward logger
-    reward_log = []
-    for name in umdac.gen:
-        ## Load specimen
-        specimen = umdac.gen[name]
-        ## Tests specimen in environment
-        t_reward = umdac.gym_evaluate(specimen, render=False)
-        
-        reward_log.append(t_reward)
-        
-        ## Update fitness value
-        umdac.fitness[name] = t_reward
-    
-    ## Train, create new generation
-    umdac.train(N_SURV, N_RAND_SURV)    
-    
-    ## Save best specimen
-    names = list(umdac.fitness.keys())
-    f = list(umdac.fitness.values())
+    ## Train
+    history = umdac.train(surv=SURV, 
+                rand_surv=RAND_SURV,
+                noise=NOISE)
 
-    if len(max_rewards) > 0:
-        if max(max_rewards) < max(f) or len(max_rewards) == 1:
+    ## Generation's average total reward
+    avg_f = history['avg'][-1]
 
-            best = names[f.index(max(f))]
-            umdac.save_specimen(umdac.gen[best], 'result_specimen')
-
-    ## Calculate and log average reward
-    avg_reward = sum(reward_log) / len(reward_log)
-    avg_reward_log.append(avg_reward)
-    ## Log max reward
-    max_rewards.append(max(reward_log))
-    min_rewards.append(min(reward_log))
-
+    print(generation, ' / ', GENERATIONS,' avg reward: ', avg_f)
 
     ## Plot training info online
     plt.clf()
 
-    plt.plot(range(len(min_rewards)), min_rewards,
+    plt.plot(range(generation + 1), history['min'],
              label='Minimum')
-    plt.plot(range(len(max_rewards)), max_rewards,
+    plt.plot(range(generation + 1), history['max'],
              label='Maximum')
-    plt.plot(range(len(avg_reward_log)), avg_reward_log, 
+    plt.plot(range(generation + 1), history['avg'], 
              label='Average')
     plt.grid(b=True, which='major', color='#DDDDDD', 
              linestyle='-')
@@ -107,55 +75,36 @@ for i in range(GENERATIONS):
 
     plt.draw()
     plt.pause(.00001)
+    
+    ## Save best specimen to .h5 file 
+    if max(history['max']) == history['max'][-1]:
 
-    ## Print some data during training
-    print('generation ', i, '/', GENERATIONS,
-          ', average reward: ', avg_reward)
+        names = list(umdac.fitness.keys())
+        f = list(umdac.fitness.values())
 
-    ## Stop if game is solved
-    if AUTO_STOP and max(reward_log) >= SOLVED:
-        break
+        best = umdac.gen[names[f.index(max(f))]]
+        umdac.save_specimen(best, FILENAME)
+        print('Best specimen saved')
 
-umdac.env.close() ## Close environment 
-
-## Save training data 
-if LOG:
-    f = open(LOG_FILENAME, 'w')
-    f.write('Data order: avg, max, min. Notes: '+LOG_NOTES+'\n')
-    f.write(str(avg_reward_log)+'\n')
-    f.write(str((max_rewards))+'\n')
-    f.write(str((min_rewards))+'\n')
-    f.close()
-
-print('Training finished!')
-
-## Plot training data
+## Plot graph
 plt.show()
-
-## Select best specimen 
-best = list(umdac.fitness.keys())[
-list(umdac.fitness.values()).index(max(
-umdac.fitness.values()))]
 
 ## Render best speciemens
 print('')
 print('-'*5, ' Rendering best specimen ', '-'*5)
 
-umdac.iterations = 1 ## Set iterations to 1
+## Select best specimen 
+names = list(umdac.fitness.keys())
+f = list(umdac.fitness.values())
 
-rlog = [] ## Reward logger
+best = umdac.gen[names[f.index(max(f))]]
 
-for n in range(100):
-    ## For each specimen
-    specimen = umdac.gen[best]
-    ## Tests specimen in environment
-    t_reward = umdac.gym_evaluate(specimen,
-                                 render=True)
-    rlog.append(t_reward)
-    avg = sum(rlog) / len(rlog)
+problem.iterations = 100
 
-    print('Total reward: ', t_reward, 
-          ',  average total reward: ', avg) 
+## Render best specimen
+t_r = problem.evaluate(best, model, 
+                        render=True,
+                        verbose=True)
 
-    ## Set random seed to random value
-    umdac.seed = np.random.randint(254)
+print('Average reward of 100 iterations: ', t_r)
+
