@@ -17,7 +17,9 @@ class UMDAc():
                  model, 
                  problem, 
                  gen_size): 
-        
+
+        np.random.seed(None) 
+
         ## Global variables
         self.model = model
         self.gen_size = gen_size
@@ -48,7 +50,8 @@ class UMDAc():
             'min':[],
             'max':[]}
 
-    def train(self, surv, rand_surv, noise=None):
+    def train(self, surv, rand_surv, 
+              selection_mode='max', noise=None):
 
         n_surv = int(self.gen_size*surv)
         n_random_surv = int(n_surv*rand_surv)
@@ -63,8 +66,7 @@ class UMDAc():
 
             specimen = self.gen[name]
             t_reward = self.problem.evaluate(specimen, 
-                                             self.model, 
-                                             render=False)
+                                             self.model) 
             self.fitness[name] = t_reward
 
         ## Collect data about generation
@@ -83,7 +85,12 @@ class UMDAc():
         for n in range(n_r):
             
             ## Select worst specimen
-            indx = survivors_fitness.index(min(survivors_fitness))
+            if selection_mode == 'max':
+                indx = survivors_fitness.index(min(survivors_fitness))
+
+            elif selection_mode == 'min':
+                indx = survivors_fitness.index(max(survivors_fitness))
+
             ## Save worsts 
             worsts.append(survivors[indx])    
             worsts_fitness.append(survivors_fitness[indx])
@@ -180,7 +187,11 @@ class UMDAc():
         to_select_fitness = new_fitness+worsts_fitness
 
         for i in range(len(worsts)):
-            indx = np.argmax(to_select_fitness)
+            ## Select best
+            if selection_mode == 'max':
+                indx = np.argmax(to_select_fitness)
+            elif selection_mode == 'min':
+                indx = np.argmin(to_select_fitness)
             
             ## Add selected specimen to new generation
             if 'n' in to_select_names[indx]:
