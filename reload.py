@@ -8,6 +8,9 @@ MAX_STEPS = None
 SEED = 0
 RENDER = True
 
+## Change working directory
+os.chdir('results')
+
 ## List files
 mypath = os.getcwd() ## Current path
 files = [f for f in listdir(mypath) if isfile(join(mypath, f))]
@@ -36,6 +39,7 @@ while sel not in range(len(fs)):
     sel = int(input('Selection > '))
 
 sname = fs[sel] ## Selected filename
+print(sname, ' selected.')
 
 ## List of available environments
 envs = ['CartPole-v0','LunarLander-v2', 
