@@ -8,6 +8,9 @@ MAX_STEPS = None
 SEED = 0
 RENDER = True
 
+## Change working directory
+os.chdir('results')
+
 ## List files
 mypath = os.getcwd() ## Current path
 files = [f for f in listdir(mypath) if isfile(join(mypath, f))]
@@ -36,6 +39,7 @@ while sel not in range(len(fs)):
     sel = int(input('Selection > '))
 
 sname = fs[sel] ## Selected filename
+print(sname, ' selected.')
 
 ## List of available environments
 envs = ['CartPole-v0','LunarLander-v2', 
@@ -52,25 +56,40 @@ sel = None
 while sel not in range(len(envs)):
     sel = int(input('Selection > '))
 
+action_modes = ['argmax', 'raw']
+for i, action in enumerate(action_modes):
+    print('['+str(i)+'] '+action)
+
+print('')
+act_sel = None 
+while act_sel not in range(len(envs)):
+    act_sel = int(input('Selection > '))
+
+action_mode = action_modes[act_sel]
+
+from UMDAc.UMDAc import UMDAc
+from UMDAc.Wrappers.Gym import Gym
+
+### INITIALIZATION ###
+
 ## Init env
-import gym
-env = gym.make(envs[sel]) 
+ITERATIONS = 100
+problem = Gym(envs[sel],
+              iterations=ITERATIONS,
+              max_steps=MAX_STEPS,
+              action_mode=action_mode)
 
 ## Init UMDAc
-from UMDAc.UMDAc import UMDAc
+umdac = UMDAc(model=None,
+             problem=problem,
+             gen_size=None)
 
-umdac = UMDAc(model=None, 
-             gen_size=1,
-             max_steps=MAX_STEPS,
-             env=env,
-             seed=SEED) 
+umdac.load_model(sname)
 
 ## Evaluate specimen, render enabled
+tr = problem.evaluate(specimen=None,
+                     model=umdac.model,
+                     render=True,
+                     verbose=True)
 
-l = []
-f = []
-
-umdac.load_specimen(sname)
-
-tr = umdac.gym_evaluate(None, RENDER)
 print('\n', 'total reward: ', tr, '\n')

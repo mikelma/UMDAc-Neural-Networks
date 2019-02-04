@@ -1,8 +1,5 @@
-from UMDAc.UMDAc import UMDAc
 import matplotlib.pyplot as plt
-
 import numpy as np
-import gym
 
 import keras
 
@@ -11,23 +8,30 @@ from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.layers import Convolution2D, MaxPooling2D
 from keras.utils import np_utils
 
+from UMDAc.UMDAc import UMDAc
+from UMDAc.Wrappers.Gym import Gym
+
 ### HYPERPARAMETERS ###
 
 GENERATIONS = 1000
 GEN_SIZE = 100
-N_SURV = 30 
-N_RAND_SURV = 20 
+SURV = .5 
+RAND_SURV = .3 
+
+NOISE = None 
+FILENAME = 'car_result.h5' # Filename of best specimen
 
 ITERATIONS = 1
 MAX_STEPS = 200
 
-## Environment initialization
-env = gym.make('CarRacing-v0')
+## Initialize Gym problem 
+problem = Gym('CarRacing-v0',
+              iterations=ITERATIONS,
+              max_steps=MAX_STEPS,
+              action_mode='raw')
 
-observation = env.reset()
-
-in_shape = observation.shape
-action_size = env.action_space.shape[0]
+in_shape = (96, 96, 3) 
+action_size = problem.env.action_space.shape[0]
 
 ## Build Network
 model = Sequential()
@@ -47,50 +51,30 @@ model.summary()
 
 ## Initialize UMDAc
 umdac = UMDAc(model,
-              gen_size=GEN_SIZE, 
-              env=env, 
-              max_steps=MAX_STEPS,
-              iterations=ITERATIONS, 
-              action_mode='raw')
+             problem=problem,
+             gen_size=GEN_SIZE)
 
-## Reset training data loggers    
-avg_reward_log = []
-max_rewards = []
-min_rewards = []
-last_avg_reward = 0
+### TRAINING ###
+for generation in range(GENERATIONS):
 
-for i in range(GENERATIONS):    
-    ## Reset reward logger
-    reward_log = []
-    for name in umdac.gen:
-        ## Load specimen
-        specimen = umdac.gen[name]
-        ## Tests specimen in environment
-        t_reward = umdac.gym_evaluate(specimen, render=True)
-        
-        reward_log.append(t_reward)
-        
-        ## Update fitness value
-        umdac.fitness[name] = t_reward
-    
-    ## Train, create new generation
-    umdac.train(N_SURV, N_RAND_SURV)    
+    ## Train
+    history = umdac.train(surv=SURV, 
+                rand_surv=RAND_SURV,
+                noise=NOISE)
 
-    ## Calculate and log average reward
-    avg_reward = sum(reward_log) / len(reward_log)
-    avg_reward_log.append(avg_reward)
-    ## Log max reward
-    max_rewards.append(max(reward_log))
-    min_rewards.append(min(reward_log))
+    ## Generation's average total reward
+    avg_f = history['avg'][-1]
+
+    print(generation, ' / ', GENERATIONS,' avg reward: ', avg_f)
 
     ## Plot training info online
     plt.clf()
 
-    plt.plot(range(len(min_rewards)), min_rewards,
+    plt.plot(range(generation + 1), history['min'],
              label='Minimum')
-    plt.plot(range(len(max_rewards)), max_rewards,
+    plt.plot(range(generation + 1), history['max'],
              label='Maximum')
-    plt.plot(range(len(avg_reward_log)), avg_reward_log, 
+    plt.plot(range(generation + 1), history['avg'], 
              label='Average')
     plt.grid(b=True, which='major', color='#DDDDDD', 
              linestyle='-')
@@ -100,8 +84,36 @@ for i in range(GENERATIONS):
 
     plt.draw()
     plt.pause(.00001)
+    
+    ## Save best specimen to .h5 file 
+    if max(history['max']) == history['max'][-1]:
 
-    ## Print some data during training
-    print('generation ', i, '/', GENERATIONS,
-          ', average reward: ', avg_reward)
+        names = list(umdac.fitness.keys())
+        f = list(umdac.fitness.values())
+
+        best = umdac.gen[names[f.index(max(f))]]
+        umdac.save_specimen(best, FILENAME)
+        print('Best specimen saved')
+
+## Plot graph
+plt.show()
+
+## Render best speciemens
+print('')
+print('-'*5, ' Rendering best specimen ', '-'*5)
+
+## Select best specimen 
+names = list(umdac.fitness.keys())
+f = list(umdac.fitness.values())
+
+best = umdac.gen[names[f.index(max(f))]]
+
+problem.iterations = 100
+
+## Render best specimen
+t_r = problem.evaluate(best, model, 
+                        render=True,
+                        verbose=True)
+
+print('Average reward of 100 iterations: ', t_r)
 
