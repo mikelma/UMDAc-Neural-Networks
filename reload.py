@@ -43,7 +43,8 @@ print(sname, ' selected.')
 
 ## List of available environments
 envs = ['CartPole-v0','LunarLander-v2', 
-        'BipedalWalker-v2']
+        'BipedalWalker-v2', 
+        'BipedalWalkerHardcore-v2']
 
 print('\n'+'Select environment:')
 ## Show envs
