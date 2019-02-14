@@ -11,13 +11,18 @@ class Gym():
                      iterations=1,
                      max_steps=None,
                      action_mode='argmax',
-                     result_mode='avg'):
+                     result_mode='avg',
+                     state_depht=2,
+                     out_depth=2):
 
         ## Init environment
         self.env = gym.make(envname)
         
         self.iterations = iterations
         self.max_steps = max_steps
+
+        self.state_depht = state_depht
+        self.out_depth = out_depth
 
         '''
         ACTION MODE:
@@ -56,20 +61,31 @@ class Gym():
                     ## Render env
                     if render:
                         self.env.render()
+
                     ## Format state
-                    state = np.array([state])
+                    if self.state_depht == 2:
+                        state = np.array([state])
+                    elif self.state_depht == 3:
+                        state = np.array([[state]])
+
                     ## Pass forward state data 
                     output = model.predict(state) 
+                    
+                    ## Format output
+                    if self.out_depth == 2:
+                        output = output[0]
+                    elif self.out_depth == 3:
+                        output = output[0][0]
 
                     ## Format output to use it as next action
                     if self.action_mode == 'argmax':
-                        action = np.argmax(output[0])
+                        action = np.argmax(output)
 
                     elif self.action_mode == 'raw':
-                        action = output[0]
+                        action = output
 
                     elif self.action_mode == 'tanh':
-                        action = np.tanh(output[0])
+                        action = np.tanh(output)
 
                     ## Run new step
                     state, reward, done, _ = self.env.step(action)
@@ -93,19 +109,29 @@ class Gym():
                         self.env.render()
 
                     ## Format state
-                    state = np.array([state])
+                    if self.state_depht == 2:
+                        state = np.array([state])
+                    elif self.state_depht == 3:
+                        state = np.array([[state]])
+
                     ## Pass forward state data 
                     output = model.predict(state) 
 
+                    ## Format output
+                    if self.out_depth == 2:
+                        output = output[0]
+                    elif self.out_depth == 3:
+                        output = output[0][0]
+
                     ## Format output to use it as next action
                     if self.action_mode == 'argmax':
-                        action = np.argmax(output[0])
+                        action = np.argmax(output)
 
                     elif self.action_mode == 'raw':
-                        action = output[0]
+                        action = output
 
                     elif self.action_mode == 'tanh':
-                        action = np.tanh(output[0])
+                        action = np.tanh(output)
 
                     ## Run new step
                     state, reward, done, _ = self.env.step(action)
