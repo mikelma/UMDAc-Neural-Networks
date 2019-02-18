@@ -42,7 +42,9 @@ sname = fs[sel] ## Selected filename
 print(sname, ' selected.')
 
 ## List of available environments
-envs = ['CartPole-v0','LunarLander-v2', 
+envs = ['CartPole-v0',
+        'LunarLander-v2', 
+        'LunarLanderContinuous-v2',
         'BipedalWalker-v2', 
         'BipedalWalkerHardcore-v2']
 
