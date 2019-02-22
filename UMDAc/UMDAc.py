@@ -239,7 +239,7 @@ if __name__ == '__main__':
 
     cartpole = Gym('CartPole-v0')
 
-    GENERATIONS = 10
+    GENERATIONS = 15
     GEN_SIZE = 30
     SURV = .5
     RAND_SURV = .3 
