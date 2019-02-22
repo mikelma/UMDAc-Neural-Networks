@@ -5,8 +5,6 @@ from os.path import isfile, join
 ## HYPERPARAMETERS
 FORMAT = '.h5'
 MAX_STEPS = None
-SEED = 0
-RENDER = True
 
 ## Change working directory
 os.chdir('results')
@@ -76,9 +74,8 @@ from UMDAc.Wrappers.Gym import Gym
 ### INITIALIZATION ###
 
 ## Init env
-ITERATIONS = 100
 problem = Gym(envs[sel],
-              iterations=ITERATIONS,
+              iterations=1,
               max_steps=MAX_STEPS,
               action_mode=action_mode)
 
@@ -89,10 +86,24 @@ umdac = UMDAc(model=None,
 
 umdac.load_model(sname)
 
-## Evaluate specimen, render enabled
-tr = problem.evaluate(specimen=None,
-                     model=umdac.model,
-                     render=True,
-                     verbose=True)
+from tqdm import tqdm
 
-print('\n', 'total reward: ', tr, '\n')
+log = []
+
+print('')
+if input('Render environment? [Y/n]') == 'n':
+    RENDER = False
+else:
+    RENDER = True
+
+for i in tqdm(range(100)):
+    ## Evaluate specimen, render enabled
+    tr = problem.evaluate(specimen=None,
+                         model=umdac.model,
+                         render=RENDER,
+                         verbose=RENDER)
+    log.append(tr)
+
+print('')
+print('Average total reward of 100 runs: ', sum(log) / len(log))
+

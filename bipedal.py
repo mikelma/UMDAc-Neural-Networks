@@ -13,14 +13,14 @@ from UMDAc.Wrappers.Gym import Gym
 GENERATIONS = 1000
 GEN_SIZE = 400
 SURV = .5 
-RAND_SURV = .3 
+RAND_SURV = None
+NOISE = None 
 
 ENV_NAME = 'BipedalWalker-v2'
 
 ITERATIONS = 3
 MAX_STEPS = 600 
 
-NOISE = None 
 FILENAME = 'bipedal.h5' # Filename of best specimen
 
 ## Initialize Gym problem 
