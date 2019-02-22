@@ -49,19 +49,27 @@ class UMDAc():
             'avg':[],
             'min':[],
             'max':[]}
-
-    def train(self, surv, rand_surv, 
-              selection_mode='max', noise=None):
+        
+    def train(self, 
+              surv, 
+              rand_surv=None, 
+              selection_mode='max', 
+              noise=None):
 
         n_surv = int(self.gen_size*surv)
-        n_random_surv = int(n_surv*rand_surv)
+
+        if rand_surv == None:
+            n_random_surv = 0
+        else:
+            n_random_surv = int(n_surv*rand_surv)
+
         n_surv -= n_random_surv
 
         survivors = []
         survivors_fitness = []
-
+        
+        ## Evaluate population
         for name in self.gen:
-            
             survivors.append(name)
 
             specimen = self.gen[name]
@@ -97,17 +105,18 @@ class UMDAc():
             ## Delete worsts from survivors lists
             del survivors[indx]
             del survivors_fitness[indx]
-
-        ## Randomly select bad specimens to survive
-        for i in range(n_random_surv):
-            ## Random index
-            indx = np.random.randint(len(worsts))
-            ## Add random specimen to survivors 
-            survivors.append(worsts[indx])
-            survivors_fitness.append(worsts_fitness[indx])
-            ## Update worst specimens' lists
-            del worsts[indx]
-            del worsts_fitness[indx]
+        
+        if rand_surv != None: 
+            ## Randomly select bad specimens to survive
+            for i in range(n_random_surv):
+                ## Random index
+                indx = np.random.randint(len(worsts))
+                ## Add random specimen to survivors 
+                survivors.append(worsts[indx])
+                survivors_fitness.append(worsts_fitness[indx])
+                ## Update worst specimens' lists
+                del worsts[indx]
+                del worsts_fitness[indx]
         
         ## Generate new specimens (empty):
         self.new = {}
@@ -167,46 +176,13 @@ class UMDAc():
                         i_sample += 1 
         
         ## After generating a set of new specimens
-        new_names = []
-        new_fitness = [] 
 
-        for name in self.new:
-            ## Evaluate new specimens
-            ## and store data for later comparison
-            new_names.append(name)
-            specimen = self.new[name]
-            ## Load
-            new_fitness.append(self.problem.evaluate(
-                specimen, self.model))
+        new_names = list(self.new.keys())
 
-        '''
-        Selection. Replace all specimens in the worsts list
-        with best specimens of the to_select lists.
-        '''
-        to_select_names = new_names+worsts
-        to_select_fitness = new_fitness+worsts_fitness
-
-        for i in range(len(worsts)):
-            ## Select best
-            if selection_mode == 'max':
-                indx = np.argmax(to_select_fitness)
-            elif selection_mode == 'min':
-                indx = np.argmin(to_select_fitness)
-            
-            ## Add selected specimen to new generation
-            if 'n' in to_select_names[indx]:
-                ## Replace specimen
-                self.gen[worsts[i]] = copy.deepcopy(self.new[
-                to_select_names[indx]])
-
-            else:
-                ## Replace specimen
-                self.gen[worsts[i]] = copy.deepcopy(self.gen[
-                to_select_names[indx]])
-
-            ## Update selection lists
-            del to_select_names[indx]
-            del to_select_fitness[indx]
+        ## Replace worst specimens for new ones
+        for i, name in enumerate(worsts):
+            # print(name)
+            self.gen[name] = copy.deepcopy(self.new[new_names[i]]) 
 
         return self.history
 
@@ -242,9 +218,9 @@ if __name__ == '__main__':
     GENERATIONS = 15
     GEN_SIZE = 30
     SURV = .5
-    RAND_SURV = .3 
+    RAND_SURV = None 
 
-    NOISE = None 
+    NOISE = .1 
 
     a = Input(shape=(4,))
     b = Dense(2)(a)
@@ -265,6 +241,7 @@ if __name__ == '__main__':
 
         print(generation, ' / ', GENERATIONS,' avg reward: ', avg_f)
 
+    # quit()
     ## Render best speciemens
     print('')
     print('-'*5, ' Rendering best specimen ', '-'*5)
