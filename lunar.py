@@ -11,12 +11,13 @@ from UMDAc.Wrappers.Gym import Gym
 
 ### HYPERPARAMETERS ###
 GENERATIONS = 500
-GEN_SIZE = 200
+GEN_SIZE = 300
 SURV = .5
-RAND_SURV = .3 
+RAND_SURV = None 
 
 NOISE = None 
-FILENAME = 'lunar_result.h5' # Filename of best specimen
+
+FILENAME = 'lunar_result_nonoise.h5' # Filename of best specimen
 # Problem specific
 MAX_STEPS = 400
 ITERATIONS = 3
@@ -28,7 +29,7 @@ problem = Gym('LunarLander-v2',
 
 ## Initialize model
 a = Input(shape=(8,))
-b = Dense(4)(a)
+b = Dense(4, activation='elu')(a)
 
 model = Model(inputs=a, outputs=b)
 
@@ -49,8 +50,10 @@ for generation in range(GENERATIONS):
 
     ## Generation's average total reward
     avg_f = history['avg'][-1]
+    max_f = history['max'][-1]
 
-    print(generation, ' / ', GENERATIONS,' avg reward: ', avg_f)
+    print(generation, ' / ', GENERATIONS,' avg reward: ', avg_f,
+                    ' max reward: ', max_f)
 
     ## Plot training info online
     plt.clf()
