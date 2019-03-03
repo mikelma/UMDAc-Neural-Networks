@@ -9,3 +9,4 @@ Find some demos here: https://www.youtube.com/watch?v=l_vnZPnBImA&t=1s
 - Matplotlib
 - Gym (OpenAI)
 - Keras
+- h5py
